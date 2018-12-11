@@ -450,31 +450,27 @@ class Threads implements Callable {
 
 	@Override
 	public Void call() throws Exception{
-		try {
-			c.register ();
-			while (true) {
-				int nt = (int) numThreads;
-				ExecutorService executor = Executors.newFixedThreadPool(nt);
-				LinkedList<Callable<Worker>> threads = new LinkedList <Callable<Worker>> ();
-				for (int i = 0; i < nt; i++) {
-					int start = (i * (100/nt));
-					int end =(i+1 * (100/nt)) - 1; 
-					threads.add(new Worker(lb, c, ui, start, end));
+		int nt = (int) numThreads;
+		ExecutorService executor = Executors.newFixedThreadPool(nt);;
+		LinkedList<Callable<Worker>> threads = new LinkedList <Callable<Worker>> ();;
 
-				}	
 
-				try {
-					executor.invokeAll(threads);
-					lb.update();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-		} finally {
-			c.unregister();
+		for (int i = 0; i < nt; i++) {
+			int start = (i * (100/nt));
+			int end =((i+1) * (100/nt)) - 1; 
+			threads.add(new Worker(lb, c, ui, start, end));
 		}
+
+		while (true) {
+
+			try {
+				executor.invokeAll(threads);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			lb.update();
+
+		}
+
 	}
-
-
-
 }
