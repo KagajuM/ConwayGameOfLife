@@ -453,24 +453,28 @@ class Threads implements Callable {
 		int nt = (int) numThreads;
 		ExecutorService executor = Executors.newFixedThreadPool(nt);;
 		LinkedList<Callable<Worker>> threads = new LinkedList <Callable<Worker>> ();;
-
+		int start, end;
 
 		for (int i = 0; i < nt; i++) {
-			int start = (i * (100/nt));
-			int end =((i+1) * (100/nt)) - 1; 
+			start = (i * (100/nt));
+			if (i == (nt-1) ) {
+				end = 99;
+			} else  {
+				end =((i+1) * (100/nt)) - 1; 
+			}
+			
 			threads.add(new Worker(lb, c, ui, start, end));
 		}
 
 		while (true) {
-
 			try {
 				executor.invokeAll(threads);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 			lb.update();
-
 		}
+		
 
 	}
 }
