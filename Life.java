@@ -1,11 +1,8 @@
 /*
     Life.java
-
     Graphical implementation of Conway's game of Life.
-
     Currently single-threaded, but has infrastructure for multithreaded
     solutions.
-
     Michael L. Scott, November 2016, based on earlier versions from
     1998, 2007, and 2011.
  */
@@ -13,6 +10,8 @@
 import java.awt.*;          // older of the two standard Java GUIs
 import java.awt.event.*;
 import javax.swing.*;
+
+
 import java.lang.Thread.*;
 import java.util.LinkedList;
 import java.util.concurrent.Callable;
@@ -137,17 +136,15 @@ class Worker implements Callable {
 	// c.register() and c.unregister() properly.
 	@Override
 	public Void call() throws Exception {
-		// TODO Auto-generated method stub
 		try {
 			c.register();
 			try {
-				while (true) {
-					lb.doGeneration(start, end);
-				}
-			} catch(Coordinator.KilledException e) {return null;}
+				lb.doGeneration(start, end);
+			} catch (Coordinator.KilledException e) {}
 		} finally {
 			c.unregister();
 		}
+		return null;
 	}
 }
 
@@ -221,7 +218,6 @@ class LifeBoard extends JPanel {
 		}
 
 		//Have this in its own function
-
 		// tell graphic system that LifeBoard needs to be re-rendered
 	}
 
@@ -426,28 +422,59 @@ class UI extends JPanel {
 		root = getRootPane();
 		root.setDefaultButton(runButton);
 	}
-	
+
 
 	public void onRunClick() {
 		//Todo: Start the executor here
-		int nt = (int) numThreads;
-		ExecutorService executor = Executors.newFixedThreadPool(nt);
-		LinkedList<Callable<Worker>> threads = new LinkedList <Callable<Worker>> ();
-		for (int i = 0; i < nt; i++) {
-			int start = (i * (100/nt));
-			int end =(i+1 * (100/nt)) - 1; 
-			threads.add(new Worker(lb, c, this, start, end));
+		ExecutorService executor = Executors.newFixedThreadPool(1); 
+		Threads threads = new Threads (lb, c, this, numThreads);
+		executor.submit(threads);	
+		//Worker w = new Worker(lb, c, this, start, end);
+		//w.start();
 
-			try {
-				executor.invokeAll(threads);
-				lb.update();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+	}
+}
+
+class Threads implements Callable {
+	long numThreads = 1;
+	LifeBoard lb;
+	Coordinator c;
+	UI ui;
+
+	public Threads(LifeBoard lb, Coordinator c, UI ui, long numThreads) {
+		this.numThreads = numThreads;
+		this.lb = lb;
+		this.c = c;
+		this.ui = ui;
+	}
+
+	@Override
+	public Void call() throws Exception{
+		try {
+			c.register ();
+			while (true) {
+				int nt = (int) numThreads;
+				ExecutorService executor = Executors.newFixedThreadPool(nt);
+				LinkedList<Callable<Worker>> threads = new LinkedList <Callable<Worker>> ();
+				for (int i = 0; i < nt; i++) {
+					int start = (i * (100/nt));
+					int end =(i+1 * (100/nt)) - 1; 
+					threads.add(new Worker(lb, c, ui, start, end));
+
+				}	
+
+				try {
+					executor.invokeAll(threads);
+					lb.update();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
-			
-			//Worker w = new Worker(lb, c, this, start, end);
-			//w.start();
+		} finally {
+			c.unregister();
 		}
 	}
+
+
+
 }
